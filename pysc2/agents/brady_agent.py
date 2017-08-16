@@ -37,7 +37,7 @@ _SELECT_RECTANGLE = actions.FUNCTIONS.select_rect.id
 _MOVE_CAMERA = actions.FUNCTIONS.move_camera.id
 _SELECT_UNIT = actions.FUNCTIONS.select_unit.id
 _NOT_QUEUED = [0]
-_SELECT_ADD = [0]
+_SELECT_NEW = [0]
 _SELECT_ALL = [0]
 
 _SINGLE_SELECT = [0]
@@ -50,40 +50,58 @@ apmRestrict = 0
 
       # 3/select_rect                                        (7/select_add [2]; 0/screen [84, 84]; 2/screen2 [84, 84])
       # 331/Move_screen                                      (3/queued [2]; 0/screen [84, 84])
+class StateMachine(base_agent.BaseAgent):
+    def step(self, obs):
+        notSelected = testBool
+        global apmRestrict
+        apmRestrict = apmRestrict
+        if apmRestrict != 0:
+            apmRestrict -= 1
+            return Waiting.step(obs)
+        if obs.observation["player"][1] > 150 and notSelected == True:
+            global testBool
+            testBool = False
 
-class BuildABuilding(base_agent.BaseAgent) :
+            return actions.FunctionCall(_SELECT_RECTANGLE, [_SELECT_NEW, (0, 0), (64, 64)])
+        elif testBool == False and len(obs.observation['multi_select']) > 0:
+            # apmRestrict = 100
+            return actions.FunctionCall(_SELECT_UNIT, [_TYPE_SELECT, [45]])
+        else:
+            return Waiting().step(obs)
+
+class BuildABuilding(base_agent.BaseAgent):
 
   def step(self, obs):
     super(BuildABuilding, self).step(obs)
     notSelected = testBool
     global apmRestrict
     apmRestrict = apmRestrict
-    rand1 = randint(0, 83)
-    rand2 = randint(0, 83)
-    rand3 = randint(0, 83)
-    rand4 = randint(0, 83)
     if apmRestrict != 0:
         apmRestrict -= 1
         return actions.FunctionCall(_NO_OP, [])
     if obs.observation["player"][1] > 150 and notSelected == True:
       global testBool
       testBool = False
-      apmRestrict = 100
-      return actions.FunctionCall(_SELECT_RECTANGLE, [_SELECT_ADD, (0, 0), (64, 64)])
-
-    # if(len(obs.observation["multi_select"]) != 2):
-    #     print("reselect")
-    #     return actions.FunctionCall(_SELECT_RECTANGLE, [_SELECT_ADD, (rand1,rand2), (rand3,rand4)])
+      # apmRestrict = 100
+      return actions.FunctionCall(_SELECT_RECTANGLE, [_SELECT_NEW, (0, 0), (64, 64)])
     elif testBool == False and len(obs.observation['multi_select']) > 0:
-        apmRestrict = 100
+        # apmRestrict = 100
         return actions.FunctionCall(_SELECT_UNIT, [_TYPE_SELECT, [45]])
     else:
-      # all_selected = obs.observation["multi_select"]
-      # selected_drone = None
-      # for unit in all_selected:
-      #   if(unit[0] == 84 or unit[0] == 104 or unit[0] == 45):
-      #     selected_drone = unit
-      #     break
-      # print(selected_drone)
+      return Waiting().step(obs)
+      # return actions.FunctionCall(_NO_OP, [])
+
+
+class SelectEconDrone():
+    def step(self, obs):
+        print("SELECT DRONE")
+
+class Build():
+    def step(self, obs):
+      print("Build")
       return actions.FunctionCall(_NO_OP, [])
 
+
+class Waiting():
+    def step(self, obs):
+        return actions.FunctionCall(_NO_OP, [])
